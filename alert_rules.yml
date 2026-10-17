@@ -1,0 +1,69 @@
+groups:
+- name: app_alerts
+  rules:
+  # Алерт на высокий уровень ошибок приложения
+  - alert: AppHighErrorRate
+    expr: app_error_rate_percent > 5
+    for: 1m
+    labels:
+      severity: critical
+      environment: production
+      service: app
+      team: backend
+    annotations:
+      summary: "Высокий уровень ошибок ({{ $value }}%)"
+      description: "Уровень ошибок выше 5% в течение 1 минуты"
+      runbook: "ссылка на инструкцию"
+
+  # Алерт на медленные ответы приложения
+  - alert: AppHighResponseTime
+    expr: histogram_quantile(0.95, sum(rate(app_http_response_time_seconds_bucket[5m])) by (le)) > 2
+    for: 2m
+    labels:
+      severity: warning
+      environment: production
+      service: app
+      team: backend
+    annotations:
+      summary: "Время отклика ({{ $value }}s)"
+      description: "Время отклика 95-го процентиля превышает 2 секунды в течение 2 минут"
+
+  # Алерт на высокое использование памяти приложения
+  - alert: AppHighMemoryUsage
+    expr: app_memory_usage_mb > 500
+    for: 3m
+    labels:
+      severity: warning
+      environment: production
+      service: app
+      team: backend
+    annotations:
+      summary: "Использование памяти ({{ $value }} MB)"
+      description: "Использование памяти превышает 500 МБ в течение 3 минут"
+
+  # Алерт на высокое использование CPU приложения
+  - alert: AppHighCpuUsage
+    expr: app_cpu_usage_percent > 80
+    for: 2m
+    labels:
+      severity: warning
+      environment: production
+      service: app
+      team: backend
+    annotations:
+      summary: "Высокая загрузка ЦП ({{ $value }}%)"
+      description: "Загрузка ЦП превышает 80% в течение 2 минут"
+
+  # Алерт на недоступность приложения
+  - alert: AppDown
+    expr: up{job="app"} == 0
+    for: 1m
+    labels:
+      severity: critical
+      environment: production
+      service: app
+      team: backend
+    annotations:
+      summary: "Приложение не работает"
+      description: "Приложение не работает более 1 минуты"
+      runbook: "ссылка на инструкцию"

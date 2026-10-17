@@ -1,15 +1,16 @@
-version: "3"
-
 services:
   prometheus:
-    image: prom/prometheus
-    ports:  
+    image: prom/prometheus:latest
+    ports:
       - target: 9090
         published: 9090
     volumes:
-      - type: bind
-        source: ./prometheus.yml
-        target: /etc/prometheus/prometheus.yml
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./alert_rules.yml:/etc/prometheus/alert_rules.yml
+      - prometheus-data:/prometheus
+    networks:
+      - monitoring
+
   app:
     image: sample-app
     build:
@@ -18,9 +19,38 @@ services:
     ports:
       - target: 8000
         published: 8080
+    networks:
+      - monitoring
 
-  grafana:
-    image: grafana/grafana
-    container_name: grafana
+  alertmanager:
+    image: prom/alertmanager:latest
     ports:
-      - 3000:3000
+      - "9093:9093"
+    volumes:
+      - alertmanager-data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--log.level=debug'
+      - '--web.external-url=http://localhost:9093'
+    depends_on:
+      - prometheus
+    networks:
+      - monitoring
+
+volumes:
+  alertmanager-data:
+  prometheus-data:
+
+networks:
+  monitoring:
+    driver: bridge
+
+    
+  # grafana:
+  #   image: grafana/grafana
+  #   container_name: grafana
+  #   ports:
+  #     - 3000:3000
+  #   networks:
+  #     - monitoring
